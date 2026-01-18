@@ -44,7 +44,10 @@ export function ChatArea({ contact }: ChatAreaProps) {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [lastMessageTime, setLastMessageTime] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const MESSAGE_COOLDOWN = 500; // 500ms between messages
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -117,6 +120,12 @@ export function ChatArea({ contact }: ChatAreaProps) {
   const handleSendMessage = async () => {
     if (!user || !contact || !newMessage.trim()) return;
 
+    // Rate limiting
+    const now = Date.now();
+    if (now - lastMessageTime < MESSAGE_COOLDOWN) {
+      return; // Silently ignore rapid messages
+    }
+
     const { error } = await supabase.from('messages').insert({
       sender_id: user.id,
       receiver_id: contact.contact_user_id,
@@ -131,6 +140,7 @@ export function ChatArea({ contact }: ChatAreaProps) {
         variant: 'destructive',
       });
     } else {
+      setLastMessageTime(now);
       setNewMessage('');
       setReplyTo(null);
     }

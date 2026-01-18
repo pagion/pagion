@@ -53,22 +53,34 @@ export function Settings({ onClose }: SettingsProps) {
 
   const handleRegenerateUid = async () => {
     if (!profile) return;
+    
+    // Rate limiting: 1 minute cooldown
+    const lastRegenTime = localStorage.getItem('lastUidRegenTime');
+    const now = Date.now();
+    if (lastRegenTime && now - parseInt(lastRegenTime) < 60000) {
+      const remainingSeconds = Math.ceil((60000 - (now - parseInt(lastRegenTime))) / 1000);
+      toast({
+        title: 'Cooldown active',
+        description: `You can regenerate your UID in ${remainingSeconds} seconds.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setRegenerating(true);
 
-    const newUid = Math.random().toString(36).substring(2, 10);
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ uid: newUid })
-      .eq('user_id', profile.user_id);
+    // Use server-side function for secure UID generation with collision handling
+    const { data: newUid, error } = await supabase
+      .rpc('regenerate_profile_uid', { p_user_id: profile.user_id });
 
     if (error) {
       toast({
         title: 'Error',
-        description: 'Failed to regenerate UID.',
+        description: 'Failed to regenerate UID. Please try again.',
         variant: 'destructive',
       });
     } else {
+      localStorage.setItem('lastUidRegenTime', now.toString());
       toast({
         title: 'UID regenerated',
         description: 'Your new UID is ready to share.',

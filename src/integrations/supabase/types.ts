@@ -112,6 +112,7 @@ export type Database = {
     }
     Functions: {
       generate_avatar_color: { Args: never; Returns: string }
+      regenerate_profile_uid: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
