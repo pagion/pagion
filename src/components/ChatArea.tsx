@@ -48,6 +48,7 @@ export function ChatArea({ contact }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const MESSAGE_COOLDOWN = 500; // 500ms between messages
+  const MAX_MESSAGE_LENGTH = 10000;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -118,7 +119,18 @@ export function ChatArea({ contact }: ChatAreaProps) {
   }, [user, contact]);
 
   const handleSendMessage = async () => {
-    if (!user || !contact || !newMessage.trim()) return;
+    const trimmedMessage = newMessage.trim();
+    if (!user || !contact || !trimmedMessage) return;
+
+    // Length validation
+    if (trimmedMessage.length > MAX_MESSAGE_LENGTH) {
+      toast({
+        title: 'Message too long',
+        description: `Messages must be under ${MAX_MESSAGE_LENGTH.toLocaleString()} characters.`,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     // Rate limiting
     const now = Date.now();
@@ -129,7 +141,7 @@ export function ChatArea({ contact }: ChatAreaProps) {
     const { error } = await supabase.from('messages').insert({
       sender_id: user.id,
       receiver_id: contact.contact_user_id,
-      content: newMessage.trim(),
+      content: trimmedMessage,
       reply_to_id: replyTo?.id || null,
     });
 
@@ -147,11 +159,22 @@ export function ChatArea({ contact }: ChatAreaProps) {
   };
 
   const handleEditMessage = async () => {
-    if (!editingMessage || !editContent.trim()) return;
+    const trimmedContent = editContent.trim();
+    if (!editingMessage || !trimmedContent) return;
+
+    // Length validation
+    if (trimmedContent.length > MAX_MESSAGE_LENGTH) {
+      toast({
+        title: 'Message too long',
+        description: `Messages must be under ${MAX_MESSAGE_LENGTH.toLocaleString()} characters.`,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const { error } = await supabase
       .from('messages')
-      .update({ content: editContent.trim(), is_edited: true })
+      .update({ content: trimmedContent, is_edited: true })
       .eq('id', editingMessage.id);
 
     if (error) {
