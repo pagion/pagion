@@ -52,9 +52,10 @@ export default function Auth() {
 
         const { error } = await signUp(name, email, password);
         if (error) {
+          console.error('Registration error:', error);
           toast({
             title: 'Registration failed',
-            description: error.message,
+            description: 'Unable to create account. Please try again or contact support.',
             variant: 'destructive',
           });
         } else {
@@ -67,9 +68,10 @@ export default function Auth() {
       } else {
         const { error } = await signIn(email, password);
         if (error) {
+          console.error('Login error:', error);
           toast({
             title: 'Login failed',
-            description: error.message,
+            description: 'Invalid email or password.',
             variant: 'destructive',
           });
         } else {
