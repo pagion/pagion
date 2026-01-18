@@ -112,6 +112,13 @@ export type Database = {
     }
     Functions: {
       generate_avatar_color: { Args: never; Returns: string }
+      lookup_profile_by_uid: {
+        Args: { p_uid: string }
+        Returns: {
+          name: string
+          user_id: string
+        }[]
+      }
       regenerate_profile_uid: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {

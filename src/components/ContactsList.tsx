@@ -60,13 +60,26 @@ export function ContactsList({ onSelectContact, selectedContactId }: ContactsLis
 
   const handleAddContact = async () => {
     if (!user || !searchUid.trim()) return;
+    
+    const trimmedUid = searchUid.trim();
+    
+    // Validate UID format (8 alphanumeric characters)
+    if (trimmedUid.length !== 8) {
+      toast({
+        title: 'Invalid UID',
+        description: 'UID must be exactly 8 characters.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setLoading(true);
 
-    const { data: foundProfile, error: findError } = await supabase
-      .from('profiles')
-      .select('user_id, name')
-      .eq('uid', searchUid.trim())
-      .maybeSingle();
+    // Use secure RPC function for UID lookup (minimal data exposure)
+    const { data: foundProfiles, error: findError } = await supabase
+      .rpc('lookup_profile_by_uid', { p_uid: trimmedUid });
+
+    const foundProfile = foundProfiles?.[0];
 
     if (findError || !foundProfile) {
       toast({
