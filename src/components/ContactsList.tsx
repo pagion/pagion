@@ -35,23 +35,39 @@ export function ContactsList({ onSelectContact, selectedContactId }: ContactsLis
   const fetchContacts = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
+    // First fetch contacts
+    const { data: contactsData, error: contactsError } = await supabase
       .from('contacts')
-      .select(`
-        id,
-        contact_user_id,
-        profile:profiles!contacts_contact_user_id_fkey(name, uid, avatar_color)
-      `)
+      .select('id, contact_user_id')
       .eq('user_id', user.id);
 
-    if (!error && data) {
-      const formattedContacts = data.map((c: any) => ({
+    if (contactsError || !contactsData || contactsData.length === 0) {
+      setContacts([]);
+      return;
+    }
+
+    // Then fetch profiles for those contacts
+    const contactUserIds = contactsData.map(c => c.contact_user_id);
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('user_id, name, uid, avatar_color')
+      .in('user_id', contactUserIds);
+
+    if (profilesError || !profilesData) {
+      setContacts([]);
+      return;
+    }
+
+    // Combine the data
+    const formattedContacts = contactsData.map((c) => {
+      const profile = profilesData.find(p => p.user_id === c.contact_user_id);
+      return {
         id: c.id,
         contact_user_id: c.contact_user_id,
-        profile: c.profile,
-      }));
-      setContacts(formattedContacts);
-    }
+        profile: profile || { name: 'Unknown', uid: '????????', avatar_color: '#888888' },
+      };
+    });
+    setContacts(formattedContacts);
   };
 
   useEffect(() => {
